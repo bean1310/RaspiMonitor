@@ -6,6 +6,11 @@ use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
+
+    private $nics = [];
+    private $cpuInfo = [];
+    private $memoryInfo = [];
+    // private $disksInfo = [];
     /**
      * Create a new controller instance.
      *
@@ -14,6 +19,10 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->nics = $this->getNicInfo();
+        $this->cpuInfo = $this->getCpuInfo();
+        $this->memoryInfo = $this->getMemoryInfo();
+        // $this->disksInfo = $this->getDisksInfo();
     }
 
     /**
@@ -23,11 +32,181 @@ class HomeController extends Controller
      */
     public function index()
     {
-        exec("ip -f inet address | grep inet | grep eth", $str, $res);
-        var_dump($_SERVER);
-        var_dump($res);
-        $wifiIpAddress = "";
-        phpinfo();
-        return view('home', \compact("wifiIpAddress"));
+        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo]);
     }
+
+    // POST処理
+    // public function control(Request $request) {
+    //     $data = array();
+    //     if      ($request->exists('poweroff'))          $this->devicePoweroff($data);
+    //     else if ($request->exists('reboot'))            $this->deviceReboot($data);
+    //     else if ($request->exists('updateAndUpgrade'))  $this->softwareUpdateAndUpgrade($data);
+    //     else if ($request->exists('distUpgrade'))       $this->distUpgrade($data);
+
+    //     return view('home', $data);
+    // }
+
+    private function getNicInfo() {
+
+        exec("ip -j a", $networkData, $isFailed);
+
+        if (!$isFailed) {
+            $networkInfo = json_decode($networkData[0], true);
+            $nics = array();
+            foreach ($networkInfo as $interface) {
+                if ($interface["link_type"] == "ether") {
+                    array_push($nics, $interface);
+                }
+            }
+
+            foreach ($nics as &$nic) {
+                $newNic = [
+                    "ifname"     => $nic["ifname"],
+                    "details"    => $nic["addr_info"],
+                    "macAddress" => $nic["address"],
+                ];
+                if (strpos($newNic["ifname"], "eth") !== false) {
+                    $newNic["name"] = "Ethernet";
+                } else if (strpos($newNic["ifname"], "wlan") !== false) {
+                    $newNic["name"] = "Wi-Fi";
+                } else {
+                    $newNic["name"] = "Unknown";
+                }
+                $nic = $newNic;
+            }
+
+            foreach ($nics as &$nic) {
+                foreach ($nic["details"] as &$addrInfo) {
+                    $newAddrInfo = [
+                        "ipAddress" => $addrInfo["local"],
+                        "prefixLen" => $addrInfo["prefixlen"],
+                    ];
+
+                    switch ($addrInfo["family"]) {
+                        case 'inet':
+                            $newAddrInfo["ipVersion"] = "IPv4";
+                            break;
+
+                        case 'inet6':
+                            $newAddrInfo["ipVersion"] = "IPv6";
+                            break;
+                        
+                        default:
+                            $newAddrInfo["ipVersion"] = "IPv?";
+                            break;
+                    }
+                    $addrInfo = $newAddrInfo;
+                }
+            }
+
+            return $nics;
+        }
+        
+    }
+
+    private function getCpuInfo() {
+
+        exec("lscpu -J", $cpuRawData, $isFailed);
+        if (!$isFailed) {
+            $cpuJsonData = "";
+
+            foreach ($cpuRawData as $oneLine) {
+                $cpuJsonData .= $oneLine;
+            }
+
+            $cpuInfoArray = json_decode($cpuJsonData, true);
+            $cpuInfoArray = $cpuInfoArray["lscpu"];
+
+            $cpuInfo["modelName"] = $cpuInfoArray[9]["data"];
+            $cpuInfo["cores"]     = $cpuInfoArray[2]["data"];
+            
+        } else {
+            return null;
+        }
+        exec("cat /sys/class/thermal/thermal_zone0/temp", $cpuTempRawData, $isFailed);
+        if (!$isFailed) {
+            $cpuInfo["temp"] = round($cpuTempRawData[0] / 1000);
+        }
+
+        return $cpuInfo;
+    }
+
+    private function getMemoryInfo() {
+
+        exec("cat /proc/meminfo", $memoryRawData, $isFailed);
+        if (!$isFailed) {
+            $allMemoryInfo = array();
+            foreach ($memoryRawData as $oneLine) {
+                // 実装がクソな気がする
+                $oneOfMemoryInfo = $this->stringToArray($oneLine);
+                $oneOfMemoryInfo[array_keys($oneOfMemoryInfo)[0]] = rtrim(array_values($oneOfMemoryInfo)[0], " kB");
+                $allMemoryInfo += $oneOfMemoryInfo;
+            }
+
+            $memoryInfo["memoryTotalSize"]               = $this->convertByteNumberToHumanReadableString($allMemoryInfo["MemTotal"]);
+            $bufferAndCachedMemoryValue                  = intval($allMemoryInfo["Buffers"]) + intval($allMemoryInfo["Cached"]);
+            $memoryInfo["memoryBuffersAndCachedPercent"] = round($bufferAndCachedMemoryValue / intval($allMemoryInfo["MemTotal"]) * 100);
+            $usedMemoryValue                             = intval($allMemoryInfo["MemTotal"]) - intval($allMemoryInfo["Buffers"]) - intval($allMemoryInfo["Cached"]) - intval($allMemoryInfo["MemFree"]);
+            $memoryInfo["memoryUsedPercent"]             = round( $usedMemoryValue / intval($allMemoryInfo["MemTotal"]) * 100);
+            $memoryInfo["swapTotalSize"]                 = $this->convertByteNumberToHumanReadableString($allMemoryInfo["SwapTotal"]);
+            $memoryInfo["swapUsedPercent"]               = round(intval($allMemoryInfo["SwapFree"]) / intval($allMemoryInfo["SwapTotal"]));
+        
+        } else {
+            return null;
+        }
+
+        return $memoryInfo;
+    }
+
+    /**
+     * バイト数を人間が読みやすい形式の文字列に変換する関数
+     * 
+     * とりあえずIECの二進接頭辞での出力. そのうちconfigなど見て変えれるようにしたいね.
+     *
+     * @param int|string $num   変換対象の数値
+     * @param integer $nowUnit  変換対象の変換時の単位
+     * @return string
+     */
+    private function convertByteNumberToHumanReadableString($num, $nowUnit = 0) {
+
+        static $siUnitArray = ['Byte', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        static $unitArray = ['Byte', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+
+        if (strlen($num) >= 4) {
+            $carriedNumber = round($num / 1024);
+            return $this->convertByteNumberToHumanReadableString($carriedNumber, $nowUnit + 1);
+        }
+            return $num . $unitArray[$nowUnit];
+    }
+
+    /**
+     * stringをArrayに変換する関数
+     * 
+     * "hoge:foo" to array("hoge" => "foo")
+     *
+     * @return array
+     */
+    private function stringToArray(string $str) {
+        $resultStr = explode(':', $str);
+        $resultStr[1] = trim($resultStr[1]);
+        return array($resultStr[0] => $resultStr[1]);
+    }
+
+    private function devicePoweroff(&$data) {
+        $data["wifiIpAddress"] = "poweroff";
+    }
+
+    private function deviceReboot(&$data) {
+        $data["wifiIpAddress"] = "reboot";
+        exec('wall "hoge"');
+    }
+
+    private function softwareUpdateAndUpgrade(&$data) {
+        $data["wifiIpAddress"] = "update";
+    }
+
+    private function distUpgrade(&$data) {
+        $data["wifiIpAddress"] = "dist";
+    }
+
 }
