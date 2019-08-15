@@ -29,7 +29,7 @@
                             {{-- きれいに配置したいが... --}}
                             @include('layouts.cpu', ['cpuInfo' => $cpuInfo])
                             @include('layouts.memory')
-                            {{-- @include('layouts.disk') --}}
+                            @include('layouts.disk')
                         </div>
                     </div>
                 </div>

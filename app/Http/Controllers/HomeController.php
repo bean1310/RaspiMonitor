@@ -22,7 +22,7 @@ class HomeController extends Controller
         $this->nics = $this->getNicInfo();
         $this->cpuInfo = $this->getCpuInfo();
         $this->memoryInfo = $this->getMemoryInfo();
-        // $this->disksInfo = $this->getDisksInfo();
+        $this->disksInfo = $this->getDisksInfo();
     }
 
     /**
@@ -32,7 +32,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo]);
+        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo]);
     }
 
     // POST処理
@@ -138,7 +138,7 @@ class HomeController extends Controller
             $allMemoryInfo = array();
             foreach ($memoryRawData as $oneLine) {
                 // 実装がクソな気がする
-                $oneOfMemoryInfo = $this->stringToArray($oneLine);
+                $oneOfMemoryInfo = $this->procMeminfoOutputToArray($oneLine);
                 $oneOfMemoryInfo[array_keys($oneOfMemoryInfo)[0]] = rtrim(array_values($oneOfMemoryInfo)[0], " kB");
                 $allMemoryInfo += $oneOfMemoryInfo;
             }
@@ -179,14 +179,53 @@ class HomeController extends Controller
             return $num . $unitArray[$nowUnit];
     }
 
+    private function getDisksInfo() {
+
+        exec("df -h", $diskRawDatas, $isFailed);
+
+        if (!$isFailed) {
+            $disksData = $this->dfOutputToArray($diskRawDatas);
+        } else {
+            return null;
+        }
+
+        foreach ($disksData as $diskData) {
+            if (strpos($diskData["fileSystem"], "/dev") === 0) {
+                static $cnt = 0;
+                $disksInfo[$cnt] = $diskData;
+                $cnt++;
+            }
+        }
+
+        return $disksInfo;
+
+    }
+
+    private function dfOutputToArray($dfCommandOutPut) {
+
+        $line = 0;
+        foreach ($dfCommandOutPut as $oneLine) {
+            $resultStrArray = preg_split("/\s+/", $oneLine);
+            $result[$line]["fileSystem"]  = $resultStrArray[0];
+            $result[$line]["size"]        = $resultStrArray[1];
+            $result[$line]["used"]        = $resultStrArray[2];
+            $result[$line]["avalable"]    = $resultStrArray[3];
+            $result[$line]["usedPercent"] = rtrim($resultStrArray[4], '%');
+            $result[$line]["mountPoint"]  = $resultStrArray[5];
+            $line++;
+        }
+
+        return $result;
+    }
+
     /**
-     * stringをArrayに変換する関数
+     * /proc/meminfo の内容ををArrayに変換する関数
      * 
      * "hoge:foo" to array("hoge" => "foo")
      *
      * @return array
      */
-    private function stringToArray(string $str) {
+    private function procMeminfoOutputToArray(string $str) {
         $resultStr = explode(':', $str);
         $resultStr[1] = trim($resultStr[1]);
         return array($resultStr[0] => $resultStr[1]);
