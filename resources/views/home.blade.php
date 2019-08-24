@@ -65,14 +65,13 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">PowerControl</div>
-
                 <div class="card-body">
                     <div class="row justify-content-center">
-                        <div class="col text-center">
-                            <button type="submit" class="btn btn-danger" name="poweroff" data-toggle="modal" data-target="#poweroffModal">Poweroff</button>
+                        <div class="col text-center" id="poweroff">
+                            <poweroff-component></<poweroff-component>
                         </div>
-                        <div class="col text-center">
-                            <button type="submit" class="btn btn-warning" name="reboot" data-toggle="modal" data-target="#rebootModal">Reboot</button>
+                        <div class="col text-center" id="reboot">
+                            <reboot-component></<reboot-component>   
                         </div>
                     </div>
                 </div>
@@ -81,23 +80,6 @@
     </div>
 </div>
 <br>
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">Console</div>
-
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Modal -->
 <div class="modal fade" id="poweroffModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -110,11 +92,17 @@
             </button>
         </div>
         <div class="modal-body">
-                Do you really want to poweroff?
+                1分後にシャットダウンを実行します。<br>
+                もし、キャンセルするのであればキャンセルボタンを押してください。<br>
+                もし、即時にシャットダウンを実行する場合には即時実行ボタンを押してください。
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-danger">Poweroff</button>
+            <div id="cancel-reboot-process">
+                <cancel-shutdown-process-component></cancel-shutdown-process-component>
+            </div>
+            <div id="quick-poweroff">
+                <quick-poweroff-component></quick-poweroff-component>
+            </div>
         </div>
         </div>
     </div>
@@ -131,12 +119,19 @@
                 </button>
             </div>
             <div class="modal-body">
-                    Do you really want to restart?
+                1分後に再起動を実行します。<br>
+                もし、キャンセルするのであればキャンセルボタンを押してください。<br>
+                もし、即時に再起動を実行する場合には即時実行ボタンを押してください。
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-warning">Reboot</button>
-            </div>
+                <div class="modal-footer">
+                    <div id="cancel-poweroff-process">
+                        <cancel-shutdown-process-component></cancel-shutdown-process-component>
+                    </div>
+                    <div id="quick-reboot">
+                        <quick-reboot-component></quick-reboot-component>
+                    </div>
+                </div>
+            </form>
             </div>
         </div>
     </div>
