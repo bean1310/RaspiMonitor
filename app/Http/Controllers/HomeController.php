@@ -19,6 +19,7 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+
         $this->nics = $this->getNicInfo();
         $this->cpuInfo = $this->getCpuInfo();
         $this->memoryInfo = $this->getMemoryInfo();
@@ -34,17 +35,6 @@ class HomeController extends Controller
     {
         return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo]);
     }
-
-    // POST処理
-    // public function control(Request $request) {
-    //     $data = array();
-    //     if      ($request->exists('poweroff'))          $this->devicePoweroff($data);
-    //     else if ($request->exists('reboot'))            $this->deviceReboot($data);
-    //     else if ($request->exists('updateAndUpgrade'))  $this->softwareUpdateAndUpgrade($data);
-    //     else if ($request->exists('distUpgrade'))       $this->distUpgrade($data);
-
-    //     return view('home', $data);
-    // }
 
     private function getNicInfo() {
 
@@ -231,21 +221,12 @@ class HomeController extends Controller
         return array($resultStr[0] => $resultStr[1]);
     }
 
-    private function devicePoweroff(&$data) {
-        $data["wifiIpAddress"] = "poweroff";
+    private function softwareUpdateAndUpgrade() {
+
     }
 
-    private function deviceReboot(&$data) {
-        $data["wifiIpAddress"] = "reboot";
-        exec('wall "hoge"');
-    }
+    private function distUpgrade() {
 
-    private function softwareUpdateAndUpgrade(&$data) {
-        $data["wifiIpAddress"] = "update";
-    }
-
-    private function distUpgrade(&$data) {
-        $data["wifiIpAddress"] = "dist";
     }
 
 }

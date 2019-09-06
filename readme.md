@@ -26,7 +26,7 @@ RaspberryPiの情報をブラウザで見れるようにするやつ。
   - Usedの量のグラフ表示
   - Totalの量の表示
 - パッケージ管理システムの実行（実装予定）
-- RaspberryPiのシャットダウン / 再起動（実装予定）
+- RaspberryPiのシャットダウン / 再起動
 
 ## License
 
