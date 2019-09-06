@@ -1,5 +1,5 @@
 <p align=center>
-<img src="./public/images/logo.png" width=100px><br>
+<img src="./src/public/images/logo.png" width=100px><br>
 <img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat">
 <p>
 
@@ -7,7 +7,7 @@
 
 RaspberryPiの情報をブラウザで見れるようにするやつ。
 
-![](./screen.png)
+![](./src/screen.png)
 
 ## features
 
