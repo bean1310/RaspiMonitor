@@ -1,7 +1,7 @@
 FROM php:7.3.7-fpm-buster
 
 RUN apt-get update && \
-apt-get install iproute2 nodejs npm openssh-server -y
+apt-get install iproute2 nodejs npm openssh-server git zip unzip -y
 
 WORKDIR /tmp
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -9,12 +9,6 @@ RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'a5c698ffe4b8e849a
 RUN php composer-setup.php
 RUN php -r "unlink('composer-setup.php');"
 RUN mv composer.phar /usr/local/bin/composer
-
-COPY src/ /var/www/RaspiMonitor/
-
-WORKDIR /var/www/RaspiMonitor
-RUN composer install
-RUN npm install
 
 RUN docker-php-ext-install pdo_mysql
 RUN pecl install xdebug
