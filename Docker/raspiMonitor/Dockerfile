@@ -1,7 +1,7 @@
 FROM php:7.3.7-fpm-buster
 
-RUN apt-get update
-RUN apt-get install iproute2 nodejs npm openssh-server -y
+RUN apt-get update && \
+apt-get install iproute2 nodejs npm openssh-server -y
 
 WORKDIR /tmp
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
