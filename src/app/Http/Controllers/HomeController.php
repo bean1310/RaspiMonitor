@@ -113,7 +113,7 @@ class HomeController extends Controller
             return null;
         }
 
-        if (config('app.debug', false) === false) {
+        if (config('env.docker', false) === false) {
             exec("cat /sys/class/thermal/thermal_zone0/temp", $cpuTempRawData, $isFailed);
             if (!$isFailed) {
                 $cpuInfo["temp"] = round($cpuTempRawData[0] / 1000);
