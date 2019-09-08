@@ -106,16 +106,20 @@ class HomeController extends Controller
 
             $cpuInfoArray = json_decode($cpuJsonData, true);
             $cpuInfoArray = $cpuInfoArray["lscpu"];
-
-            $cpuInfo["modelName"] = $cpuInfoArray[9]["data"];
-            $cpuInfo["cores"]     = $cpuInfoArray[2]["data"];
+            $cpuInfo["modelName"]= $this->getDataValueFromCpuInfoArray("Model name:", $cpuInfoArray);
+            $cpuInfo["cores"]= $this->getDataValueFromCpuInfoArray("CPU(s):", $cpuInfoArray);
             
         } else {
             return null;
         }
-        exec("cat /sys/class/thermal/thermal_zone0/temp", $cpuTempRawData, $isFailed);
-        if (!$isFailed) {
-            $cpuInfo["temp"] = round($cpuTempRawData[0] / 1000);
+
+        if (config('app.debug', false) === false) {
+            exec("cat /sys/class/thermal/thermal_zone0/temp", $cpuTempRawData, $isFailed);
+            if (!$isFailed) {
+                $cpuInfo["temp"] = round($cpuTempRawData[0] / 1000);
+            }
+        } else {
+            $cpuInfo["temp"] = "50(Pseudo value)";
         }
 
         return $cpuInfo;
@@ -219,6 +223,20 @@ class HomeController extends Controller
         $resultStr = explode(':', $str);
         $resultStr[1] = trim($resultStr[1]);
         return array($resultStr[0] => $resultStr[1]);
+    }
+
+    /**
+     * lscpu -J のデータをデコードしたものから指定したfield値のdata値を取る関数
+     */
+    private function getDataValueFromCpuInfoArray(string $fieldName, array $cpuJsonDataArray) {
+
+        foreach($cpuJsonDataArray as $cpuJsonData) {
+            if ($cpuJsonData['field'] == $fieldName) {
+                return $cpuJsonData['data'];
+            }
+        }
+
+        return null;
     }
 
     private function softwareUpdateAndUpgrade() {
