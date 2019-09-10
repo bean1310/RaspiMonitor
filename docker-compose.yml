@@ -9,7 +9,7 @@ services:
             - app
         volumes:
             - ./Docker/web/default.conf:/etc/nginx/conf.d/default.conf
-            - ./src:/var/www/RaspiMonitor
+            - ./:/var/www/RaspiMonitor
 
     app:
         build: 
@@ -21,7 +21,7 @@ services:
         depends_on:
             - db
         volumes:
-            - ./src:/var/www/RaspiMonitor
+            - ./:/var/www/RaspiMonitor
 
     db:
         image: mariadb:10.3.15
