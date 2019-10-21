@@ -2,6 +2,6 @@
 
 return array(
 
-	'docker' => env('ENV_DOCKER', false),
+	'docker' => file_exists("/.dockerenv"),
 
 );
