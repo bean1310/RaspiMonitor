@@ -14,4 +14,5 @@ src/log
 src/public/js
 src/public/css
 src/public/build
+src/public/fonts
 src/public/mix-manifest.json
