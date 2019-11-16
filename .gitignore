@@ -11,3 +11,7 @@ src/npm-debug.log
 src/yarn-error.log
 .vscode
 src/log
+src/public/js
+src/public/css
+src/public/build
+src/public/mix-manifest.json
