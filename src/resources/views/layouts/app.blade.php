@@ -18,6 +18,9 @@
 
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/loadingAnimations.css') }}" rel="stylesheet">
+
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
 </head>
 <body>
     <div id="app">
