@@ -7,7 +7,7 @@
             <div class="progress">
                 <div class="progress-bar" role="progressbar" style="width: {{ $diskInfo["usedPercent"] }}%" aria-valuenow="{{ $diskInfo["usedPercent"] }}" aria-valuemin="0" aria-valuemax="100">Used</div>
             </div>
-            @if ($index == 0)
+            @if ($index != count($disksInfo) - 1)
                 <br>
             @endif
             @endforeach
