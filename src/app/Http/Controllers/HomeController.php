@@ -143,7 +143,7 @@ class HomeController extends Controller
             $usedMemoryValue                             = intval($allMemoryInfo["MemTotal"]) - intval($allMemoryInfo["Buffers"]) - intval($allMemoryInfo["Cached"]) - intval($allMemoryInfo["MemFree"]);
             $memoryInfo["memoryUsedPercent"]             = round( $usedMemoryValue / intval($allMemoryInfo["MemTotal"]) * 100);
             $memoryInfo["swapTotalSize"]                 = $this->convertByteNumberToHumanReadableString($allMemoryInfo["SwapTotal"]);
-            $memoryInfo["swapUsedPercent"]               = round(intval($allMemoryInfo["SwapFree"]) / intval($allMemoryInfo["SwapTotal"]) * 100);
+            $memoryInfo["swapUsedPercent"]               = round(100 - (intval($allMemoryInfo["SwapFree"]) / intval($allMemoryInfo["SwapTotal"])) * 100);
         
         } else {
             return null;
