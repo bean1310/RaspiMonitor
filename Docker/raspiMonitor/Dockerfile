@@ -12,3 +12,5 @@ RUN mv composer.phar /usr/local/bin/composer
 
 RUN docker-php-ext-install pdo_mysql
 RUN pecl install xdebug
+
+COPY ./Docker/raspiMonitor/xdebug.ini /usr/local/etc/php/conf.d/
