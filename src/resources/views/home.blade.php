@@ -20,6 +20,23 @@
 </div>
 <br>
 <div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">Software Status</div>
+                <div class="card-body">
+                    <div class="card-deck">
+                        @foreach ($softwareInfo as $serviceName => $serviceInfo)
+                            @include('layouts.softwareStatus', ['serviceName' => $serviceName, "serviceInfo" => $serviceInfo])
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<div class="container">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">

@@ -10,6 +10,7 @@ class HomeController extends Controller
     private $nics = [];
     private $cpuInfo = [];
     private $memoryInfo = [];
+    private $softwareInfo = [];
     // private $disksInfo = [];
     /**
      * Create a new controller instance.
@@ -23,6 +24,7 @@ class HomeController extends Controller
         $this->nics = $this->getNicInfo();
         $this->cpuInfo = $this->getCpuInfo();
         $this->memoryInfo = $this->getMemoryInfo();
+        $this->softwareInfo = $this->getSofwareInfo();
         $this->disksInfo = $this->getDisksInfo();
     }
 
@@ -33,7 +35,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo]);
+        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo, "softwareInfo" => $this->softwareInfo]);
     }
 
     private function getNicInfo() {
@@ -92,6 +94,29 @@ class HomeController extends Controller
             return $nics;
         }
         
+    }
+
+    private function getSofwareInfo() : array
+    {
+        $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
+
+        $contents = file_get_contents($file);
+        $monitorServiceNames = explode(',', $contents);
+
+        $allSoftwareStatusInfo = [];
+        foreach ($monitorServiceNames as $service) {
+            exec("systemctl show $service --no-page", $rawResult, $isFailed);
+            if (!$isFailed) {
+                $softwareStatusInfo = [];
+                foreach ($rawResult as $oneLine) {
+                    $softwareStatusInfo += $this->parseStringContainDelimiter($oneLine, "=");
+                }
+                $allSoftwareStatusInfo[$service] = $softwareStatusInfo;
+                unset($rawResult);
+            }
+        }
+
+        return $allSoftwareStatusInfo;
     }
 
     private function getCpuInfo() {
@@ -210,6 +235,13 @@ class HomeController extends Controller
         }
 
         return $result;
+    }
+
+    private function parseStringContainDelimiter(string $targetString, string $delimiter = "=") : array
+    {
+        $resultStr = explode($delimiter, $targetString, 2);
+        $resultStr[1] = trim($resultStr[1]);
+        return array($resultStr[0] => $resultStr[1]);
     }
 
     /**
