@@ -110,14 +110,23 @@ class HomeController extends Controller
 
         $allSoftwareStatusInfo = [];
         foreach ($monitorServiceNames as $service) {
-            exec("systemctl show $service --no-page", $rawResult, $isFailed);
-            if (!$isFailed) {
-                $softwareStatusInfo = [];
-                foreach ($rawResult as $oneLine) {
-                    $softwareStatusInfo += $this->parseStringContainDelimiter($oneLine, "=");
+            if (!config('env.docker', false)) {
+                exec("systemctl show $service --no-page", $rawResult, $isFailed);
+                if (!$isFailed) {
+                    $softwareStatusInfo = [];
+                    foreach ($rawResult as $oneLine) {
+                        $softwareStatusInfo += $this->parseStringContainDelimiter($oneLine, "=");
+                    }
+                    $allSoftwareStatusInfo[$service] = $softwareStatusInfo;
+                    unset($rawResult);
                 }
-                $allSoftwareStatusInfo[$service] = $softwareStatusInfo;
-                unset($rawResult);
+            } else {
+                // Docker環境の場合, systemd じゃないので, 疑似情報を作る.
+                $pseudoActiveStates = ["active", "failed", "activating", "deactivating", "????"];
+                $allSoftwareStatusInfo[$service] = [
+                    "ActiveState" => $pseudoActiveStates[rand(0, count($pseudoActiveStates) - 1)],
+                    "Description" => "Pseudo Application"
+                ];
             }
         }
 
@@ -143,7 +152,7 @@ class HomeController extends Controller
             return null;
         }
 
-        if (config('env.docker', false) === false) {
+        if (!config('env.docker', false)) {
             exec("cat /sys/class/thermal/thermal_zone0/temp", $cpuTempRawData, $isFailed);
             if (!$isFailed) {
                 $cpuInfo["temp"] = round($cpuTempRawData[0] / 1000);
