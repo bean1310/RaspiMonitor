@@ -97,7 +97,7 @@ class HomeController extends Controller
     }
 
     /**
-     * MS_FILENAMEに記述されたソフトウェアの情報を取得するメソッド
+     * MS_FILENAME に記述されたソフトウェアの情報を取得するメソッド
      *
      * @return array
      */
@@ -106,6 +106,10 @@ class HomeController extends Controller
         $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
 
         $contents = file_get_contents($file);
+        if ($contents == "") {
+            return array();
+        }
+        
         $monitorServiceNames = explode(',', $contents);
 
         $allSoftwareStatusInfo = [];
