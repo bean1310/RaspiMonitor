@@ -96,6 +96,11 @@ class HomeController extends Controller
         
     }
 
+    /**
+     * MS_FILENAMEに記述されたソフトウェアの情報を取得するメソッド
+     *
+     * @return array
+     */
     private function getSofwareInfo() : array
     {
         $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
@@ -157,7 +162,7 @@ class HomeController extends Controller
             $allMemoryInfo = array();
             foreach ($memoryRawData as $oneLine) {
                 // 実装がクソな気がする
-                $oneOfMemoryInfo = $this->procMeminfoOutputToArray($oneLine);
+                $oneOfMemoryInfo = $this->parseStringContainDelimiter($oneLine, ":");
                 $oneOfMemoryInfo[array_keys($oneOfMemoryInfo)[0]] = rtrim(array_values($oneOfMemoryInfo)[0], " kB");
                 $allMemoryInfo += $oneOfMemoryInfo;
             }
@@ -237,22 +242,17 @@ class HomeController extends Controller
         return $result;
     }
 
+    /**
+     *  "key=value" のような文字列を"key => value" な配列にするやつ
+     * key=value=value の場合は最初の=だけ認識して, あとの=はvalue内の文字列とする.
+     *
+     * @param string $targetString 変換する文字列
+     * @param string $delimiter デリミタ
+     * @return array
+     */
     private function parseStringContainDelimiter(string $targetString, string $delimiter = "=") : array
     {
         $resultStr = explode($delimiter, $targetString, 2);
-        $resultStr[1] = trim($resultStr[1]);
-        return array($resultStr[0] => $resultStr[1]);
-    }
-
-    /**
-     * /proc/meminfo の内容ををArrayに変換する関数
-     * 
-     * "hoge:foo" to array("hoge" => "foo")
-     *
-     * @return array
-     */
-    private function procMeminfoOutputToArray(string $str) {
-        $resultStr = explode(':', $str);
         $resultStr[1] = trim($resultStr[1]);
         return array($resultStr[0] => $resultStr[1]);
     }
