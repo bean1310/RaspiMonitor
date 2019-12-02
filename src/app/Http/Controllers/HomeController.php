@@ -10,6 +10,7 @@ class HomeController extends Controller
     private $nics = [];
     private $cpuInfo = [];
     private $memoryInfo = [];
+    private $softwareInfo = [];
     // private $disksInfo = [];
     /**
      * Create a new controller instance.
@@ -23,6 +24,7 @@ class HomeController extends Controller
         $this->nics = $this->getNicInfo();
         $this->cpuInfo = $this->getCpuInfo();
         $this->memoryInfo = $this->getMemoryInfo();
+        $this->softwareInfo = $this->getSofwareInfo();
         $this->disksInfo = $this->getDisksInfo();
     }
 
@@ -33,7 +35,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo]);
+        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo, "softwareInfo" => $this->softwareInfo]);
     }
 
     private function getNicInfo() {
@@ -94,6 +96,47 @@ class HomeController extends Controller
         
     }
 
+    /**
+     * MS_FILENAME に記述されたソフトウェアの情報を取得するメソッド
+     *
+     * @return array
+     */
+    private function getSofwareInfo() : array
+    {
+        $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
+
+        $contents = file_get_contents($file);
+        if ($contents == "") {
+            return array();
+        }
+        
+        $monitorServiceNames = explode(',', $contents);
+
+        $allSoftwareStatusInfo = [];
+        foreach ($monitorServiceNames as $service) {
+            if (!config('env.docker', false)) {
+                exec("systemctl show $service --no-page", $rawResult, $isFailed);
+                if (!$isFailed) {
+                    $softwareStatusInfo = [];
+                    foreach ($rawResult as $oneLine) {
+                        $softwareStatusInfo += $this->parseStringContainDelimiter($oneLine, "=");
+                    }
+                    $allSoftwareStatusInfo[$service] = $softwareStatusInfo;
+                    unset($rawResult);
+                }
+            } else {
+                // Docker環境の場合, systemd じゃないので, 疑似情報を作る.
+                $pseudoActiveStates = ["active", "failed", "activating", "deactivating", "????"];
+                $allSoftwareStatusInfo[$service] = [
+                    "ActiveState" => $pseudoActiveStates[rand(0, count($pseudoActiveStates) - 1)],
+                    "Description" => "Pseudo Application"
+                ];
+            }
+        }
+
+        return $allSoftwareStatusInfo;
+    }
+
     private function getCpuInfo() {
 
         exec("lscpu -J", $cpuRawData, $isFailed);
@@ -113,7 +156,7 @@ class HomeController extends Controller
             return null;
         }
 
-        if (config('env.docker', false) === false) {
+        if (!config('env.docker', false)) {
             exec("cat /sys/class/thermal/thermal_zone0/temp", $cpuTempRawData, $isFailed);
             if (!$isFailed) {
                 $cpuInfo["temp"] = round($cpuTempRawData[0] / 1000);
@@ -132,7 +175,7 @@ class HomeController extends Controller
             $allMemoryInfo = array();
             foreach ($memoryRawData as $oneLine) {
                 // 実装がクソな気がする
-                $oneOfMemoryInfo = $this->procMeminfoOutputToArray($oneLine);
+                $oneOfMemoryInfo = $this->parseStringContainDelimiter($oneLine, ":");
                 $oneOfMemoryInfo[array_keys($oneOfMemoryInfo)[0]] = rtrim(array_values($oneOfMemoryInfo)[0], " kB");
                 $allMemoryInfo += $oneOfMemoryInfo;
             }
@@ -213,14 +256,16 @@ class HomeController extends Controller
     }
 
     /**
-     * /proc/meminfo の内容ををArrayに変換する関数
-     * 
-     * "hoge:foo" to array("hoge" => "foo")
+     *  "key=value" のような文字列を"key => value" な配列にするやつ
+     * key=value=value の場合は最初の=だけ認識して, あとの=はvalue内の文字列とする.
      *
+     * @param string $targetString 変換する文字列
+     * @param string $delimiter デリミタ
      * @return array
      */
-    private function procMeminfoOutputToArray(string $str) {
-        $resultStr = explode(':', $str);
+    private function parseStringContainDelimiter(string $targetString, string $delimiter = "=") : array
+    {
+        $resultStr = explode($delimiter, $targetString, 2);
         $resultStr[1] = trim($resultStr[1]);
         return array($resultStr[0] => $resultStr[1]);
     }
