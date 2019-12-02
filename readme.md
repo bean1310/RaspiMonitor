@@ -15,6 +15,9 @@ RaspberryPiの情報をブラウザで見れるようにするやつ。
   - IPv4 Address
   - IPv6 Address
   - MAC Address
+- サービスの情報の表示
+  - Description
+  - Active-State
 - CPU情報の表示
   - Core数
   - CPU温度
@@ -25,7 +28,6 @@ RaspberryPiの情報をブラウザで見れるようにするやつ。
 - ディスク情報の表示
   - Usedの量のグラフ表示
   - Totalの量の表示
-- パッケージ管理システムの実行（実装予定）
 - RaspberryPiのシャットダウン / 再起動
 
 ## License
