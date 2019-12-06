@@ -35,11 +35,21 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo, "softwareInfo" => $this->softwareInfo]);
+        return view('home', ["nics"         => $this->nics,
+                             "cpuInfo"      => $this->cpuInfo,
+                             "memoryInfo"   => $this->memoryInfo,
+                             "disksInfo"    => $this->disksInfo,
+                             "softwareInfo" => $this->softwareInfo
+                             ]);
     }
 
-    private function getNicInfo() {
+    private function getNicInfo()
+    {
+        return $this->_getNicInfo();
+    }
 
+    private function _getNicInfo()
+    {
         exec("ip -j a", $networkData, $isFailed);
 
         if (!$isFailed) {
@@ -96,24 +106,32 @@ class HomeController extends Controller
         
     }
 
-    /**
-     * MS_FILENAME に記述されたソフトウェアの情報を取得するメソッド
-     *
-     * @return array
-     */
-    private function getSofwareInfo() : array
+    private function getSofwareInfo()
     {
         $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
 
         $contents = file_get_contents($file);
         if ($contents == "") {
-            return array();
+            return null;
         }
-        
-        $monitorServiceNames = explode(',', $contents);
+
+        return $this->_getSofwareInfo($contents);
+    }
+
+    /**
+     * MS_FILENAME に記述されたソフトウェアの情報を取得するメソッド
+     *
+     * @return array
+     */
+    private function _getSofwareInfo(string $services) : array
+    {
+        $monitorServiceNames = explode(',', $services);
 
         $allSoftwareStatusInfo = [];
         foreach ($monitorServiceNames as $service) {
+            if ($service == "") {
+                continue;
+            }
             if (!config('env.docker', false)) {
                 exec("systemctl show $service --no-page", $rawResult, $isFailed);
                 if (!$isFailed) {
@@ -137,7 +155,13 @@ class HomeController extends Controller
         return $allSoftwareStatusInfo;
     }
 
-    private function getCpuInfo() {
+
+    private function getCpuInfo()
+    {
+        return $this->_getCpuInfo();
+    }
+
+    private function _getCpuInfo() {
 
         exec("lscpu -J", $cpuRawData, $isFailed);
         if (!$isFailed) {
@@ -168,7 +192,12 @@ class HomeController extends Controller
         return $cpuInfo;
     }
 
-    private function getMemoryInfo() {
+    private function getMemoryInfo()
+    {
+        return $this->_getMemoryInfo();
+    }
+
+    private function _getMemoryInfo() {
 
         exec("cat /proc/meminfo", $memoryRawData, $isFailed);
         if (!$isFailed) {
@@ -195,28 +224,12 @@ class HomeController extends Controller
         return $memoryInfo;
     }
 
-    /**
-     * バイト数を人間が読みやすい形式の文字列に変換する関数
-     * 
-     * とりあえずIECの二進接頭辞での出力. そのうちconfigなど見て変えれるようにしたいね.
-     *
-     * @param int|string $num   変換対象の数値
-     * @param integer $nowUnit  変換対象の変換時の単位
-     * @return string
-     */
-    private function convertByteNumberToHumanReadableString($num, $nowUnit = 0) {
-
-        static $siUnitArray = ['Byte', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-        static $unitArray = ['Byte', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-
-        if (strlen($num) >= 4) {
-            $carriedNumber = round($num / 1024);
-            return $this->convertByteNumberToHumanReadableString($carriedNumber, $nowUnit + 1);
-        }
-            return $num . $unitArray[$nowUnit];
+    private function getDisksInfo()
+    {
+        return $this->_getDisksInfo();
     }
 
-    private function getDisksInfo() {
+    private function _getDisksInfo() {
 
         exec("df -h", $diskRawDatas, $isFailed);
 
@@ -236,6 +249,27 @@ class HomeController extends Controller
 
         return $disksInfo;
 
+    }
+
+    /**
+     * バイト数を人間が読みやすい形式の文字列に変換する関数
+     * 
+     * とりあえずIECの二進接頭辞での出力. そのうちconfigなど見て変えれるようにしたいね.
+     *
+     * @param int|string $num   変換対象の数値
+     * @param integer $nowUnit  変換対象の変換時の単位
+     * @return string
+     */
+    private function convertByteNumberToHumanReadableString($num, $nowUnit = 0) {
+
+        static $siUnitArray = ['Byte', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        static $unitArray = ['Byte', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+
+        if (strlen($num) >= 4) {
+            $carriedNumber = round($num / 1024);
+            return $this->convertByteNumberToHumanReadableString($carriedNumber, $nowUnit + 1);
+        }
+            return $num . $unitArray[$nowUnit];
     }
 
     private function dfOutputToArray($dfCommandOutPut) {

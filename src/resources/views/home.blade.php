@@ -2,6 +2,7 @@
 
 @section('content')
 
+@if (!is_null($nics))
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -19,6 +20,9 @@
     </div>
 </div>
 <br>
+@endif
+
+@if (!is_null($softwareInfo))
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -36,46 +40,29 @@
     </div>
 </div>
 <br>
+@endif
+
+@if (!is_null($cpuInfo) || !is_null($memoryInfo) || !is_null($diskInfo))
 <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">System Status</div>
-                    <div class="card-body">
-                        <div class="card-deck">
-                            {{-- きれいに配置したいが... --}}
-                            @include('layouts.cpu', ['cpuInfo' => $cpuInfo])
-                            @include('layouts.memory')
-                            @include('layouts.disk')
-                        </div>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">System Status</div>
+                <div class="card-body">
+                    <div class="card-deck">
+                        {{-- きれいに配置したいが... --}}
+                        @include('layouts.cpu')
+                        @include('layouts.memory')
+                        @include('layouts.disk')
                     </div>
                 </div>
             </div>
         </div>
     </div>
-<br>
-{{-- <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">SoftwareControl</div>
-                <div class="card-body">
-                    <form action="/home" method="POST">
-                        @csrf 
-                        <div class="row justify-content-center">
-                            <div class="col text-center">
-                                <button type="submit" class="btn btn-primary" data-toggle="modal" data-target="#updateAndUpgradeModal">update & upgrade</button>
-                            </div>
-                            <div class="col text-center">
-                                <button type="submit" class="btn btn-warning" name="distUpgrade">dist upgrade</button>
-                            </div>
-                        </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
-<br> --}}
+<br>
+@endif
+
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
