@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\DisplaySettings;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
-
-    private $nics = [];
-    private $cpuInfo = [];
-    private $memoryInfo = [];
-    private $softwareInfo = [];
-    // private $disksInfo = [];
     /**
      * Create a new controller instance.
      *
@@ -20,12 +16,6 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-
-        $this->nics = $this->getNicInfo();
-        $this->cpuInfo = $this->getCpuInfo();
-        $this->memoryInfo = $this->getMemoryInfo();
-        $this->softwareInfo = $this->getSofwareInfo();
-        $this->disksInfo = $this->getDisksInfo();
     }
 
     /**
@@ -35,11 +25,25 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home', ["nics" => $this->nics, "cpuInfo" => $this->cpuInfo, "memoryInfo" => $this->memoryInfo, "disksInfo" => $this->disksInfo, "softwareInfo" => $this->softwareInfo]);
+        $displaySettings = $this->getDisplaySettings();
+
+        $nics = $displaySettings['display_network_status'] ? $this->getNicInfo() : null;
+        $cpuInfo = $displaySettings['display_system_status'] ? $this->getCpuInfo() : null;
+        $memoryInfo = $displaySettings['display_system_status'] ? $this->getMemoryInfo() : null;
+        $disksInfo = $displaySettings['display_system_status'] ? $this->getDisksInfo() : null;
+        $softwareInfo = $displaySettings['display_software_info'] ? $this->getSofwareInfo() : null;
+        $powerControl = $displaySettings['display_power_control'];
+
+        return view('home', compact('nics', 'cpuInfo', 'memoryInfo', 'softwareInfo', 'disksInfo', 'powerControl'));
     }
 
-    private function getNicInfo() {
+    private function getNicInfo()
+    {
+        return $this->_getNicInfo();
+    }
 
+    private function _getNicInfo()
+    {
         exec("ip -j a", $networkData, $isFailed);
 
         if (!$isFailed) {
@@ -53,8 +57,8 @@ class HomeController extends Controller
 
             foreach ($nics as &$nic) {
                 $newNic = [
-                    "ifname"     => $nic["ifname"],
-                    "details"    => $nic["addr_info"],
+                    "ifname" => $nic["ifname"],
+                    "details" => $nic["addr_info"],
                     "macAddress" => $nic["address"],
                 ];
                 if (strpos($newNic["ifname"], "eth") !== false) {
@@ -82,7 +86,7 @@ class HomeController extends Controller
                         case 'inet6':
                             $newAddrInfo["ipVersion"] = "IPv6";
                             break;
-                        
+
                         default:
                             $newAddrInfo["ipVersion"] = "IPv?";
                             break;
@@ -93,7 +97,19 @@ class HomeController extends Controller
 
             return $nics;
         }
-        
+
+    }
+
+    private function getSofwareInfo()
+    {
+        $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
+
+        $contents = file_get_contents($file);
+        if ($contents == "") {
+            return null;
+        }
+
+        return $this->_getSofwareInfo($contents);
     }
 
     /**
@@ -101,19 +117,15 @@ class HomeController extends Controller
      *
      * @return array
      */
-    private function getSofwareInfo() : array
+    private function _getSofwareInfo(string $services): array
     {
-        $file = base_path() . '/' . config('env.monitoringSoftwareListFileName');
-
-        $contents = file_get_contents($file);
-        if ($contents == "") {
-            return array();
-        }
-        
-        $monitorServiceNames = explode(',', $contents);
+        $monitorServiceNames = explode(',', $services);
 
         $allSoftwareStatusInfo = [];
         foreach ($monitorServiceNames as $service) {
+            if ($service == "") {
+                continue;
+            }
             if (!config('env.docker', false)) {
                 exec("systemctl show $service --no-page", $rawResult, $isFailed);
                 if (!$isFailed) {
@@ -137,7 +149,14 @@ class HomeController extends Controller
         return $allSoftwareStatusInfo;
     }
 
-    private function getCpuInfo() {
+
+    private function getCpuInfo()
+    {
+        return $this->_getCpuInfo();
+    }
+
+    private function _getCpuInfo()
+    {
 
         exec("lscpu -J", $cpuRawData, $isFailed);
         if (!$isFailed) {
@@ -149,9 +168,9 @@ class HomeController extends Controller
 
             $cpuInfoArray = json_decode($cpuJsonData, true);
             $cpuInfoArray = $cpuInfoArray["lscpu"];
-            $cpuInfo["modelName"]= $this->getDataValueFromCpuInfoArray("Model name:", $cpuInfoArray);
-            $cpuInfo["cores"]= $this->getDataValueFromCpuInfoArray("CPU(s):", $cpuInfoArray);
-            
+            $cpuInfo["modelName"] = $this->getDataValueFromCpuInfoArray("Model name:", $cpuInfoArray);
+            $cpuInfo["cores"] = $this->getDataValueFromCpuInfoArray("CPU(s):", $cpuInfoArray);
+
         } else {
             return null;
         }
@@ -168,7 +187,13 @@ class HomeController extends Controller
         return $cpuInfo;
     }
 
-    private function getMemoryInfo() {
+    private function getMemoryInfo()
+    {
+        return $this->_getMemoryInfo();
+    }
+
+    private function _getMemoryInfo()
+    {
 
         exec("cat /proc/meminfo", $memoryRawData, $isFailed);
         if (!$isFailed) {
@@ -180,14 +205,14 @@ class HomeController extends Controller
                 $allMemoryInfo += $oneOfMemoryInfo;
             }
 
-            $memoryInfo["memoryTotalSize"]               = $this->convertByteNumberToHumanReadableString($allMemoryInfo["MemTotal"]);
-            $bufferAndCachedMemoryValue                  = intval($allMemoryInfo["Buffers"]) + intval($allMemoryInfo["Cached"]);
+            $memoryInfo["memoryTotalSize"] = $this->convertByteNumberToHumanReadableString($allMemoryInfo["MemTotal"]);
+            $bufferAndCachedMemoryValue = intval($allMemoryInfo["Buffers"]) + intval($allMemoryInfo["Cached"]);
             $memoryInfo["memoryBuffersAndCachedPercent"] = round($bufferAndCachedMemoryValue / intval($allMemoryInfo["MemTotal"]) * 100);
-            $usedMemoryValue                             = intval($allMemoryInfo["MemTotal"]) - intval($allMemoryInfo["Buffers"]) - intval($allMemoryInfo["Cached"]) - intval($allMemoryInfo["MemFree"]);
-            $memoryInfo["memoryUsedPercent"]             = round( $usedMemoryValue / intval($allMemoryInfo["MemTotal"]) * 100);
-            $memoryInfo["swapTotalSize"]                 = $this->convertByteNumberToHumanReadableString($allMemoryInfo["SwapTotal"]);
-            $memoryInfo["swapUsedPercent"]               = round(100 - (intval($allMemoryInfo["SwapFree"]) / intval($allMemoryInfo["SwapTotal"])) * 100);
-        
+            $usedMemoryValue = intval($allMemoryInfo["MemTotal"]) - intval($allMemoryInfo["Buffers"]) - intval($allMemoryInfo["Cached"]) - intval($allMemoryInfo["MemFree"]);
+            $memoryInfo["memoryUsedPercent"] = round($usedMemoryValue / intval($allMemoryInfo["MemTotal"]) * 100);
+            $memoryInfo["swapTotalSize"] = $this->convertByteNumberToHumanReadableString($allMemoryInfo["SwapTotal"]);
+            $memoryInfo["swapUsedPercent"] = round(100 - (intval($allMemoryInfo["SwapFree"]) / intval($allMemoryInfo["SwapTotal"])) * 100);
+
         } else {
             return null;
         }
@@ -195,28 +220,13 @@ class HomeController extends Controller
         return $memoryInfo;
     }
 
-    /**
-     * バイト数を人間が読みやすい形式の文字列に変換する関数
-     * 
-     * とりあえずIECの二進接頭辞での出力. そのうちconfigなど見て変えれるようにしたいね.
-     *
-     * @param int|string $num   変換対象の数値
-     * @param integer $nowUnit  変換対象の変換時の単位
-     * @return string
-     */
-    private function convertByteNumberToHumanReadableString($num, $nowUnit = 0) {
-
-        static $siUnitArray = ['Byte', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-        static $unitArray = ['Byte', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-
-        if (strlen($num) >= 4) {
-            $carriedNumber = round($num / 1024);
-            return $this->convertByteNumberToHumanReadableString($carriedNumber, $nowUnit + 1);
-        }
-            return $num . $unitArray[$nowUnit];
+    private function getDisksInfo()
+    {
+        return $this->_getDisksInfo();
     }
 
-    private function getDisksInfo() {
+    private function _getDisksInfo()
+    {
 
         exec("df -h", $diskRawDatas, $isFailed);
 
@@ -238,17 +248,60 @@ class HomeController extends Controller
 
     }
 
-    private function dfOutputToArray($dfCommandOutPut) {
+    /**
+     * なにを表示するかの設定値を返すメソッド
+     * @return array bool値が保存されている.
+     */
+    private function getDisplaySettings(): array
+    {
+        $userName = Auth::user()->name;
+        $displaySettings = DisplaySettings::find($userName) ?: new DisplaySettings();
+
+        $settingsArray = $displaySettings->attributesToArray();
+        $formattedDisplaySettingsArray = [];
+
+        foreach ($settingsArray as $key => $value) {
+            if (preg_match("/^(?!display_).*$/", $key)) continue;
+            $formattedDisplaySettingsArray[$key] = $value ? true : false;
+        }
+
+        return $formattedDisplaySettingsArray;
+    }
+
+    /**
+     * バイト数を人間が読みやすい形式の文字列に変換する関数
+     *
+     * とりあえずIECの二進接頭辞での出力. そのうちconfigなど見て変えれるようにしたいね.
+     *
+     * @param int|string $num 変換対象の数値
+     * @param integer    $nowUnit 変換対象の変換時の単位
+     * @return string
+     */
+    private function convertByteNumberToHumanReadableString($num, $nowUnit = 0)
+    {
+
+        static $siUnitArray = ['Byte', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        static $unitArray = ['Byte', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+
+        if (strlen($num) >= 4) {
+            $carriedNumber = round($num / 1024);
+            return $this->convertByteNumberToHumanReadableString($carriedNumber, $nowUnit + 1);
+        }
+        return $num . $unitArray[$nowUnit];
+    }
+
+    private function dfOutputToArray($dfCommandOutPut)
+    {
 
         $line = 0;
         foreach ($dfCommandOutPut as $oneLine) {
             $resultStrArray = preg_split("/\s+/", $oneLine);
-            $result[$line]["fileSystem"]  = $resultStrArray[0];
-            $result[$line]["size"]        = $resultStrArray[1];
-            $result[$line]["used"]        = $resultStrArray[2];
-            $result[$line]["avalable"]    = $resultStrArray[3];
+            $result[$line]["fileSystem"] = $resultStrArray[0];
+            $result[$line]["size"] = $resultStrArray[1];
+            $result[$line]["used"] = $resultStrArray[2];
+            $result[$line]["avalable"] = $resultStrArray[3];
             $result[$line]["usedPercent"] = rtrim($resultStrArray[4], '%');
-            $result[$line]["mountPoint"]  = $resultStrArray[5];
+            $result[$line]["mountPoint"] = $resultStrArray[5];
             $line++;
         }
 
@@ -263,7 +316,7 @@ class HomeController extends Controller
      * @param string $delimiter デリミタ
      * @return array
      */
-    private function parseStringContainDelimiter(string $targetString, string $delimiter = "=") : array
+    private function parseStringContainDelimiter(string $targetString, string $delimiter = "="): array
     {
         $resultStr = explode($delimiter, $targetString, 2);
         $resultStr[1] = trim($resultStr[1]);
@@ -273,9 +326,10 @@ class HomeController extends Controller
     /**
      * lscpu -J のデータをデコードしたものから指定したfield値のdata値を取る関数
      */
-    private function getDataValueFromCpuInfoArray(string $fieldName, array $cpuJsonDataArray) {
+    private function getDataValueFromCpuInfoArray(string $fieldName, array $cpuJsonDataArray)
+    {
 
-        foreach($cpuJsonDataArray as $cpuJsonData) {
+        foreach ($cpuJsonDataArray as $cpuJsonData) {
             if ($cpuJsonData['field'] == $fieldName) {
                 return $cpuJsonData['data'];
             }
@@ -284,11 +338,13 @@ class HomeController extends Controller
         return null;
     }
 
-    private function softwareUpdateAndUpgrade() {
+    private function softwareUpdateAndUpgrade()
+    {
 
     }
 
-    private function distUpgrade() {
+    private function distUpgrade()
+    {
 
     }
 
