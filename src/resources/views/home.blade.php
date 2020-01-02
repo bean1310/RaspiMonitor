@@ -42,46 +42,54 @@
 <br>
 @endif
 
-@if (!is_null($cpuInfo) || !is_null($memoryInfo) || !is_null($diskInfo))
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">System Status</div>
-                <div class="card-body">
-                    <div class="card-deck">
-                        {{-- きれいに配置したいが... --}}
-                        @include('layouts.cpu')
-                        @include('layouts.memory')
-                        @include('layouts.disk')
+@if (!is_null($cpuInfo) || !is_null($memoryInfo) || !is_null($disksInfo))
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">System Status</div>
+                    <div class="card-body">
+                        <div class="card-deck">
+                            {{-- きれいに配置したいが... --}}
+                            @if(!is_null($cpuInfo))
+                                @include('layouts.cpu')
+                            @endif
+                            @if(!is_null($memoryInfo))
+                                @include('layouts.memory')
+                            @endif
+                            @if(!is_null($disksInfo))
+                                @include('layouts.disk')
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<br>
+    <br>
 @endif
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">PowerControl</div>
-                <div class="card-body">
-                    <div class="row justify-content-center">
-                        <div class="col text-center" id="poweroff">
-                            <poweroff-component></<poweroff-component>
-                        </div>
-                        <div class="col text-center" id="reboot">
-                            <reboot-component></<reboot-component>   
+@if($powerControl)
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">PowerControl</div>
+                    <div class="card-body">
+                        <div class="row justify-content-center">
+                            <div class="col text-center" id="poweroff">
+                                <poweroff-component></poweroff-component>
+                            </div>
+                            <div class="col text-center" id="reboot">
+                                <reboot-component></reboot-component>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+@endif
 <br>
 
 <!-- Modal -->
@@ -148,13 +156,14 @@
 </div>
 
 <!-- Modal -->
-<div class="modal fade" id="rebootModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
+<div class="modal fade" id="rebootModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="exampleModalLabel">Reboot</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -162,16 +171,15 @@
                 もし、キャンセルするのであればキャンセルボタンを押してください。<br>
                 もし、即時に再起動を実行する場合には即時実行ボタンを押してください。
             </div>
-                <div class="modal-footer">
-                    <div id="cancel-poweroff-process">
-                        <cancel-shutdown-process-component></cancel-shutdown-process-component>
-                    </div>
-                    <div id="quick-reboot">
-                        <quick-reboot-component></quick-reboot-component>
-                    </div>
+            <div class="modal-footer">
+                <div id="cancel-poweroff-process">
+                    <cancel-shutdown-process-component></cancel-shutdown-process-component>
                 </div>
-            </form>
+                <div id="quick-reboot">
+                    <quick-reboot-component></quick-reboot-component>
+                </div>
             </div>
         </div>
     </div>
+</div>
 @endsection
