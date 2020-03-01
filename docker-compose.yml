@@ -22,6 +22,7 @@ services:
             - db
         volumes:
             - ./:/var/www/RaspiMonitor
+            - /var/www/RaspiMonitor/src/node_modules
 
     db:
         image: mariadb:10.3.15
