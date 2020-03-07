@@ -42,6 +42,26 @@
         <br>
     @endif
 
+    @if (!is_null($dockerInfo))
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">Docker Containers</div>
+                        <div class="card-body">
+                            <div class="card-deck">
+                                @foreach ($dockerInfo as $containerId => $containerInfo)
+                                    @include('layouts.dockerInfo', ['containerId' => $containerId, "containerInfo" => $containerInfo])
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+    @endif
+
     @if (!is_null($cpuInfo) || !is_null($memoryInfo) || !is_null($disksInfo))
         <div class="container">
             <div class="row justify-content-center">
