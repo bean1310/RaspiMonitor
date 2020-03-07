@@ -13,5 +13,6 @@ class DisplaySettings extends Model
         'display_system_status' => true,
         'display_software_info' => true,
         'display_power_control' => true,
+        'display_docker_info' => false,
     ];
 }

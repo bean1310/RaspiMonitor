@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use App\DisplaySettings;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SettingsController extends Controller
 {
@@ -20,7 +19,10 @@ class SettingsController extends Controller
         $displaySettings = DisplaySettings::find($userName) ?: new DisplaySettings();
 
         foreach ($displaySettings->attributesToArray() as $key => $value) {
-            if (preg_match("/^[^display_]/", $key)) continue;
+            if (preg_match("/^[^display_]/", $key)) {
+                continue;
+            }
+
             $displayContents[$key]['isDisplayed'] = $value;
             $title = str_replace('display_', '', $key);
             $displayContents[$key]['title'] = __('display_contents.' . $title);
@@ -40,7 +42,9 @@ class SettingsController extends Controller
         }
 
         foreach ($displaySettings->attributesToArray() as $key => $value) {
-            if (preg_match("/^(?!display_).*$/", $key)) continue;
+            if (preg_match("/^(?!display_).*$/", $key)) {
+                continue;
+            }
 
             $displaySettings->$key = key_exists($key, $displaySettingFormData) ? 1 : 0;
 

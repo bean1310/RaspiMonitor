@@ -32,7 +32,7 @@ class HomeController extends Controller
         $memoryInfo = $displaySettings['display_system_status'] ? $this->__getMemoryInfo() : null;
         $disksInfo = $displaySettings['display_system_status'] ? $this->__getDisksInfo() : null;
         $softwareInfo = $displaySettings['display_software_info'] ? $this->__getSoftwareInfo() : null;
-        $dockerInfo = $this->__getDockerInfo();
+        $dockerInfo = $displaySettings['display_docker_info'] ? $this->__getDockerInfo() : null;
         $powerControl = $displaySettings['display_power_control'];
 
         return view('home', compact('nics', 'cpuInfo', 'memoryInfo', 'softwareInfo', 'dockerInfo', 'disksInfo', 'powerControl'));
