@@ -50,9 +50,11 @@
                         <div class="card-header">Docker Containers</div>
                         <div class="card-body">
                             <div class="card-deck">
+                                <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2">
                                 @foreach ($dockerInfo as $containerId => $containerInfo)
                                     @include('layouts.dockerInfo', ['containerId' => $containerId, "containerInfo" => $containerInfo])
                                 @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>
