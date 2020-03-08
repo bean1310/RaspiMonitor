@@ -155,7 +155,9 @@ class HomeController extends Controller
         } else {
             exec('docker ps --format "{{.ID}},{{.Status}},{{.Image}},{{.Names}}"', $output, $isFailed);
             if ($isFailed) {
-                Log::error('Failed "docker ps" command');
+                exec('whoami', $execUserName);
+                Log::error('Failed "docker ps" command by ' . $execUserName[0]);
+                unset($execUserName);
                 return null;
             }
         }
@@ -174,7 +176,8 @@ class HomeController extends Controller
 
     private function __isInstalledDocker(): bool
     {
-        system('which docker', $isFailed);
+        exec('which docker', $tmp, $isFailed);
+        unset($tmp);
         return !$isFailed;
     }
 
