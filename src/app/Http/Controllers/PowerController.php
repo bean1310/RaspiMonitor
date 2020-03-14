@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Log;
 
 class PowerController extends Controller
 {
 
-    private static $execedCommand;
+    private static $__execedCommand;
 
-    public function __construct () {
+    public function __construct()
+    {
 
     }
 
@@ -24,61 +26,76 @@ class PowerController extends Controller
 
         switch ($command) {
             case 'poweroff':
-            $isSuccessed = $this->execShutdow($isQuick, $isReboot = false);
-            break;
-            
+                $isSuccessed = $this->__execShutdow($isQuick, $isReboot = false);
+                break;
+
             case 'reboot':
-            $isSuccessed = $this->execShutdow($isQuick, $isReboot = true);
-            break;
+                $isSuccessed = $this->__execShutdow($isQuick, $isReboot = true);
+                break;
 
             case 'cancel':
-            $isSuccessed = $this->cancelShutdownCommandExecution();
-            break;
+                $isSuccessed = $this->__cancelShutdownCommandExecution();
+                break;
         }
 
         return ["isSuccessed" => $isSuccessed];
     }
 
-    private function execShutdow($isQuick = false, $isReboot) {
+    /**
+     * Execute shutdown or reboot
+     *
+     * if shutdown/reboot command is success return true
+     *
+     * @param boolean $isQuick
+     * @param string $isReboot
+     * @return bool
+     */
+    private function __execShutdow(bool $isQuick = false, string $isReboot): bool
+    {
 
         if (is_null($isReboot)) {
             throw new BadFunctionCallException('$isReboot was not given a value');
         }
 
-        $quickString  = !$isQuick ? "" : "即時";
-        $rebootString = $isReboot ? "再起動" : "シャットダウン";
-
-        if (config('app.debug', false) === true) {
-            exec("wall \"" . $quickString . $rebootString . "がRaspiMonitorから要求されました。\nデバッグモードのため、実行はされません。\"", $tmp, $isFaild);
-            return !$isFaild;
-        }
-
+        $rebootString = $isReboot ? 'Reboot' : 'Shutdown';
         $shutdownCommandOption = $isReboot ? 'r' : 'h';
 
         if ($isQuick) {
-            exec("sudo shutdown -" . $shutdownCommandOption . " now", null, $isFaild);
-            return !$isFaild;
+            Log::notice("RaspiMonitor exec quick $rebootString");
+            if (config('app.debug', false) === true) {
+                Log::debug('RaspiMonitor called Quick ' . $rebootString . ', but will not executing because this environment is DEBUG');
+                return 1;
+            } else {
+                exec("sudo shutdown -" . $shutdownCommandOption . " now", null, $isFaild);
+                return !$isFaild;
+            }
+
         } else {
-            $this->execedCommand = $isReboot;
-            exec("sudo shutdown -" . $shutdownCommandOption . " +1 -k \"RaspiMonitorにより、1分後に" . $rebootString . "を行います。\"", $tmp, $isFaild);
-            return !$isFaild;
+            Log::notice("RaspiMonitor exec $rebootString");
+            if (config('app.debug', false) === true) {
+                Log::debug('RaspiMonitor called ' . $rebootString . ', but will not executing because this environment is DEBUG');
+                return 1;
+            } else {
+                exec("sudo shutdown -" . $shutdownCommandOption . " +1 -k 'This computer will " . $rebootString . ' after 1 min by RaspiMonitor.', $tmp, $isFaild);
+                return !$isFaild;
+            }
         }
 
     }
 
-    private function cancelShutdownCommandExecution() {
+    private function __cancelShutdownCommandExecution()
+    {
 
         if (config('app.debug', false) === true) {
-            exec("wall \"シャットダウン処理のキャンセルが実行されました.\"", $tmp, $isFaild);
-            return !$isFaild;
+            Log::debug('RaspiMonitor stop executing shutdown/reboot');
+            return 1;
         }
-        
+
         exec("sudo shutdown -c", $tmp, $isFailed);
 
         return !$isFailed;
 
     }
-    
 
     // /**
     //  * Store a newly created resource in storage.
