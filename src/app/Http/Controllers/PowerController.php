@@ -38,6 +38,10 @@ class PowerController extends Controller
                 break;
         }
 
+        if (!$isSuccessed) {
+            Log::error('Failed to shutdown');
+        }
+
         return ["isSuccessed" => $isSuccessed];
     }
 
@@ -66,7 +70,7 @@ class PowerController extends Controller
                 Log::debug('RaspiMonitor called Quick ' . $rebootString . ', but will not executing because this environment is DEBUG');
                 return 1;
             } else {
-                exec("sudo shutdown -" . $shutdownCommandOption . " now", null, $isFaild);
+                exec("sudo shutdown -" . $shutdownCommandOption . " now", $unuse, $isFaild);
                 return !$isFaild;
             }
 
@@ -76,7 +80,8 @@ class PowerController extends Controller
                 Log::debug('RaspiMonitor called ' . $rebootString . ', but will not executing because this environment is DEBUG');
                 return 1;
             } else {
-                exec("sudo shutdown -" . $shutdownCommandOption . " +1 -k 'This computer will " . $rebootString . ' after 1 min by RaspiMonitor.', $tmp, $isFaild);
+                exec('wall "This computer will ' . $rebootString . ' after 1 min by RaspiMonitor."');
+                exec("sudo shutdown -" . $shutdownCommandOption . ' +1', $unuse, $isFaild);
                 return !$isFaild;
             }
         }
