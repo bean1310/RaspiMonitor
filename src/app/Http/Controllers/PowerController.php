@@ -7,12 +7,10 @@ use Log;
 
 class PowerController extends Controller
 {
-
-    private static $__execedCommand;
+    private static $execedCommand;
 
     public function __construct()
     {
-
     }
 
     /**
@@ -26,15 +24,15 @@ class PowerController extends Controller
 
         switch ($command) {
             case 'poweroff':
-                $isSuccessed = $this->__execShutdow($isQuick, $isReboot = false);
+                $isSuccessed = $this->execShutdow($isQuick, $isReboot = false);
                 break;
 
             case 'reboot':
-                $isSuccessed = $this->__execShutdow($isQuick, $isReboot = true);
+                $isSuccessed = $this->execShutdow($isQuick, $isReboot = true);
                 break;
 
             case 'cancel':
-                $isSuccessed = $this->__cancelShutdownCommandExecution();
+                $isSuccessed = $this->cancelShutdownCommandExecution();
                 break;
         }
 
@@ -42,7 +40,7 @@ class PowerController extends Controller
             Log::error('Failed to shutdown');
         }
 
-        return ["isSuccessed" => $isSuccessed];
+        return ['isSuccessed' => $isSuccessed];
     }
 
     /**
@@ -54,9 +52,8 @@ class PowerController extends Controller
      * @param string $isReboot
      * @return bool
      */
-    private function __execShutdow(bool $isQuick = false, string $isReboot): bool
+    private function execShutdow(bool $isQuick = false, string $isReboot): bool
     {
-
         if (is_null($isReboot)) {
             throw new BadFunctionCallException('$isReboot was not given a value');
         }
@@ -70,10 +67,9 @@ class PowerController extends Controller
                 Log::debug('RaspiMonitor called Quick ' . $rebootString . ', but will not executing because this environment is DEBUG');
                 return 1;
             } else {
-                exec("sudo shutdown -" . $shutdownCommandOption . " now", $unuse, $isFaild);
+                exec('sudo shutdown -' . $shutdownCommandOption . ' now', $unuse, $isFaild);
                 return !$isFaild;
             }
-
         } else {
             Log::notice("RaspiMonitor exec $rebootString");
             if (config('app.debug', false) === true) {
@@ -81,69 +77,21 @@ class PowerController extends Controller
                 return 1;
             } else {
                 exec('wall "This computer will ' . $rebootString . ' after 1 min by RaspiMonitor."');
-                exec("sudo shutdown -" . $shutdownCommandOption . ' +1', $unuse, $isFaild);
+                exec('sudo shutdown -' . $shutdownCommandOption . ' +1', $unuse, $isFaild);
                 return !$isFaild;
             }
         }
-
     }
 
-    private function __cancelShutdownCommandExecution()
+    private function cancelShutdownCommandExecution()
     {
-
         if (config('app.debug', false) === true) {
             Log::debug('RaspiMonitor stop executing shutdown/reboot');
             return 1;
         }
 
-        exec("sudo shutdown -c", $tmp, $isFailed);
+        exec('sudo shutdown -c', $tmp, $isFailed);
 
         return !$isFailed;
-
     }
-
-    // /**
-    //  * Store a newly created resource in storage.
-    //  *
-    //  * @param  \Illuminate\Http\Request  $request
-    //  * @return \Illuminate\Http\Response
-    //  */
-    // public function store(Request $request)
-    // {
-    //     //
-    // }
-
-    // /**
-    //  * Display the specified resource.
-    //  *
-    //  * @param  int  $id
-    //  * @return \Illuminate\Http\Response
-    //  */
-    // public function show($id)
-    // {
-    //     //
-    // }
-
-    // /**
-    //  * Update the specified resource in storage.
-    //  *
-    //  * @param  \Illuminate\Http\Request  $request
-    //  * @param  int  $id
-    //  * @return \Illuminate\Http\Response
-    //  */
-    // public function update(Request $request, $id)
-    // {
-    //     //
-    // }
-
-    // /**
-    //  * Remove the specified resource from storage.
-    //  *
-    //  * @param  int  $id
-    //  * @return \Illuminate\Http\Response
-    //  */
-    // public function destroy($id)
-    // {
-    //     //
-    // }
 }
