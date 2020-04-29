@@ -345,12 +345,4 @@ class HomeController extends Controller
 
         return null;
     }
-
-    private function softwareUpdateAndUpgrade()
-    {
-    }
-
-    private function distUpgrade()
-    {
-    }
 }
