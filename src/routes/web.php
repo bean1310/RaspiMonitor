@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -11,7 +13,13 @@
 |
 */
 
-Auth::routes();
+// Register is available when 0 users.
+$isUserExist = DB::table('users')->count();
+if ($isUserExist) {
+    Auth::routes(['register' => false]);
+} else {
+    Auth::routes();
+}
 
 Route::get('/', 'HomeController@index')->name('home');
 
