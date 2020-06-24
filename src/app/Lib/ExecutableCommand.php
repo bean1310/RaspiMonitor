@@ -4,12 +4,16 @@ namespace App\Lib;
 
 use Log;
 
+/**
+ * Command execute base class.
+ */
 class ExecutableCommand
 {
     private $execCommand;
     private $availableSubCommands = [];
     private $availableOptions = [];
 
+    // @TODO availableSubCommandsに配列渡して，サブコマンドごとにavailableOptionを指定したい．
     public function __construct(string $execCommand, array $availableSubCommands = null, array $availableOptions = null)
     {
         $isCorrectArgument = true;
@@ -35,8 +39,18 @@ class ExecutableCommand
         $this->availableOptions = $availableOptions;
     }
 
+    /**
+     * Execute Command
+     *
+     * This method is to execute "class subcommand" on the shell if subcommand is permitted.
+     *
+     * @param string $subCommand
+     * @param string ...$args
+     * @return void
+     */
     public function exec(string $subCommand = null, string ...$args)
     {
+        // $this->bashEscape($args);
         if (!$this->isPermitted($subCommand, $args)) {
             return false;
         }
@@ -63,6 +77,13 @@ class ExecutableCommand
         }
     }
 
+    /**
+     * This method is to check subCommand is permitted.
+     *
+     * @param string $subCommand
+     * @param array $args
+     * @return boolean
+     */
     protected function isPermitted(string $subCommand = null, array $args = []): bool
     {
         $isPermitted = true;
@@ -109,4 +130,12 @@ class ExecutableCommand
     {
         return \strstr($argument, ' ', true) ?: $argument;
     }
+
+    // Dockerの方に書いて，コンテナ名に使用できる文字列だけにしたほうがいいかも
+    // private function bashEscape(array $str)
+    // {
+    //     foreach ($str as $value) {
+    //         exec('printf %q\'' . $value . )
+    //     }
+    // }
 }
