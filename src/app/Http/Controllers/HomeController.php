@@ -141,9 +141,9 @@ class HomeController extends Controller
 
     private function getDockerInfo(): ?array
     {
-        // if (!$this->isInstalledDocker()) {
-        //     return null;
-        // }
+        if (!$this->isInstalledDocker()) {
+            return null;
+        }
 
         if (config('app.debug', false) === true) {
             $output = ['hogehoge,Up 24 hours,example/hoge:3.0,example_hoge',
