@@ -25,3 +25,5 @@ Route::get('/', 'HomeController@index')->name('home');
 
 Route::get('/settings', 'SettingsController@index')->name('settings');
 Route::post('/settings/save', 'SettingsController@save')->name('settingsSave');
+
+Route::post('/docker/action', 'DockerController@action')->name('dockerAction');
